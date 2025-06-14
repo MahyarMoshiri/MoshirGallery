@@ -4,6 +4,7 @@
 import { Suspense, useRef, useState, useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Text } from '@react-three/drei';
+import * as THREE from 'three';
 import ErrorBoundary from '@/components/error-boundary';
 import GalleryWalls from '@/components/environment/gallery-walls';
 import GalleryFloor from '@/components/environment/gallery-floor';
@@ -12,7 +13,7 @@ import GalleryLighting from '@/components/environment/gallery-lighting';
 import ArtworkFrame from '@/components/environment/artwork-frame';
 import SculpturePedestal from '@/components/environment/sculpture-pedestal';
 import SculptureLoader from '@/components/sculpture/sculpture-loader';
-import SculptureTransformControls from '@/components/sculpture/sculpture-transform-controls';
+import ArtworkTransformControls from '@/components/gallery/artwork-transform-controls';
 import { Artwork, GalleryEnvironment, Transform3D, DEFAULT_MATERIAL } from '@/lib/types';
 
 interface GallerySceneProps {
@@ -111,24 +112,28 @@ function DefaultEnvironment() {
   );
 }
 
-function ArtworkDisplay({ 
-  artwork, 
-  position, 
-  onClick, 
-  editMode, 
-  transformMode, 
-  onTransform 
-}: { 
-  artwork: Artwork; 
-  position: [number, number, number]; 
+function ArtworkDisplay({
+  artwork,
+  position,
+  onClick,
+  editMode,
+  transformMode,
+  onTransform,
+  isSelected
+}: {
+  artwork: Artwork;
+  position: [number, number, number];
   onClick: () => void;
   editMode?: boolean;
   transformMode?: 'translate' | 'rotate' | 'scale';
   onTransform?: (artworkId: string, transform: Transform3D) => void;
+  isSelected?: boolean;
 }) {
+  const groupRef = useRef<THREE.Group>(null);
+
   if (artwork.type === 'sculpture') {
     return (
-      <group position={position}>
+      <group position={position} ref={groupRef}>
         {/* Pedestal for sculpture */}
         <SculpturePedestal 
           artwork={artwork} 
@@ -143,9 +148,10 @@ function ArtworkDisplay({
         />
 
         {/* Transform controls for editing */}
-        {editMode && transformMode && onTransform && (
-          <SculptureTransformControls
+        {editMode && isSelected && transformMode && onTransform && (
+          <ArtworkTransformControls
             artwork={artwork}
+            object={groupRef.current}
             onTransformChange={onTransform}
             mode={transformMode}
             enabled={true}
@@ -168,12 +174,23 @@ function ArtworkDisplay({
   } else {
     // Traditional painting with frame
     return (
-      <group position={position}>
+      <group position={position} ref={groupRef}>
         <ArtworkFrame
           artwork={artwork}
           position={[0, 0, 0]}
           onClick={onClick}
         />
+
+        {/* Transform controls for editing */}
+        {editMode && isSelected && transformMode && onTransform && (
+          <ArtworkTransformControls
+            artwork={artwork}
+            object={groupRef.current}
+            onTransformChange={onTransform}
+            mode={transformMode}
+            enabled={true}
+          />
+        )}
         
         {/* Title */}
         <Text
@@ -191,14 +208,20 @@ function ArtworkDisplay({
   }
 }
 
-function Scene({ 
-  artworks, 
-  onArtworkClick, 
-  environment, 
-  editMode, 
-  transformMode, 
-  onArtworkTransform 
+function Scene({
+  artworks,
+  onArtworkClick,
+  environment,
+  editMode,
+  transformMode,
+  onArtworkTransform
 }: GallerySceneProps) {
+  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
+
+  const handleArtworkClick = (artwork: Artwork) => {
+    setSelectedArtwork(artwork);
+    onArtworkClick(artwork);
+  };
   const calculateArtworkPosition = (index: number, artwork: Artwork): [number, number, number] => {
     // Use custom position if available
     if (artwork.position) {
@@ -247,10 +270,11 @@ function Scene({
             key={artwork.id}
             artwork={artwork}
             position={calculateArtworkPosition(index, artwork)}
-            onClick={() => onArtworkClick(artwork)}
+            onClick={() => handleArtworkClick(artwork)}
             editMode={editMode}
             transformMode={transformMode}
             onTransform={onArtworkTransform}
+            isSelected={selectedArtwork?.id === artwork.id}
           />
         ))}
 
