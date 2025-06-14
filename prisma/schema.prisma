@@ -1,0 +1,140 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/moshir-gallery/app/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Artwork {
+    id              String   @id @default(cuid())
+    title           String
+    artist          String
+    year            Int
+    medium          String
+    dimensions      String
+    description     String   @db.Text
+    price           Float
+    imageUrl        String?  @map("image_url")
+    modelUrl        String?  @map("model_url")
+    modelFormat     String?  @map("model_format") // "gltf", "glb", "obj", "fbx", "stl"
+    type            String   @default("painting") // "painting" or "sculpture"
+    position        Json?    // For 3D positioning {x, y, z}
+    rotation        Json?    // For 3D rotation {x, y, z}
+    scale           Json?    // For 3D scaling {x, y, z}
+    materialProperties Json? @map("material_properties") // Custom material overrides
+    frameStyle      String?  @map("frame_style") // Reference to frame style
+    pedestalStyle   String?  @map("pedestal_style") // Reference to pedestal style
+    createdAt       DateTime @default(now()) @map("created_at")
+    updatedAt       DateTime @updatedAt @map("updated_at")
+    
+    offers          Offer[]
+    
+    @@map("artworks")
+}
+
+model Offer {
+    id          String   @id @default(cuid())
+    artworkId   String   @map("artwork_id")
+    userName    String   @map("user_name")
+    userEmail   String   @map("user_email")
+    offerAmount Float    @map("offer_amount")
+    message     String?  @db.Text
+    status      String   @default("pending") // "pending", "accepted", "rejected"
+    createdAt   DateTime @default(now()) @map("created_at")
+    
+    artwork     Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+    
+    @@map("offers")
+}
+
+model Contact {
+    id        String   @id @default(cuid())
+    name      String
+    email     String
+    subject   String
+    message   String   @db.Text
+    status    String   @default("unread") // "unread", "read", "replied"
+    createdAt DateTime @default(now()) @map("created_at")
+    
+    @@map("contacts")
+}
+
+model Admin {
+    id        String   @id @default(cuid())
+    username  String   @unique
+    password  String   // Will store hashed password
+    createdAt DateTime @default(now()) @map("created_at")
+    
+    @@map("admins")
+}
+
+model GalleryEnvironment {
+    id          String   @id @default(cuid())
+    name        String
+    isActive    Boolean  @default(false) @map("is_active")
+    wallConfig  Json     @map("wall_config") // {color, texture, material, reflectivity}
+    floorConfig Json     @map("floor_config") // {color, texture, material, reflectivity}
+    ceilingConfig Json   @map("ceiling_config") // {color, texture, material, reflectivity}
+    dimensions  Json     // {width, height, depth}
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+    
+    lightingConfigs LightingConfig[]
+    
+    @@map("gallery_environments")
+}
+
+model LightingConfig {
+    id            String   @id @default(cuid())
+    environmentId String   @map("environment_id")
+    name          String
+    type          String   // "ambient", "directional", "point", "spot"
+    position      Json?    // {x, y, z} for positioned lights
+    rotation      Json?    // {x, y, z} for directional lights
+    color         String   @default("#ffffff")
+    intensity     Float    @default(1.0)
+    distance      Float?   // For point/spot lights
+    angle         Float?   // For spot lights
+    penumbra      Float?   // For spot lights
+    castShadow    Boolean  @default(false) @map("cast_shadow")
+    shadowMapSize Int?     @map("shadow_map_size")
+    isEnabled     Boolean  @default(true) @map("is_enabled")
+    createdAt     DateTime @default(now()) @map("created_at")
+    updatedAt     DateTime @updatedAt @map("updated_at")
+    
+    environment   GalleryEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+    
+    @@map("lighting_configs")
+}
+
+model FrameStyle {
+    id          String   @id @default(cuid())
+    name        String
+    description String?  @db.Text
+    modelUrl    String?  @map("model_url") // Optional 3D model for frame
+    dimensions  Json     // {width, height, depth, borderWidth}
+    material    Json     // {color, texture, metalness, roughness}
+    isDefault   Boolean  @default(false) @map("is_default")
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+    
+    @@map("frame_styles")
+}
+
+model PedestalStyle {
+    id          String   @id @default(cuid())
+    name        String
+    description String?  @db.Text
+    modelUrl    String?  @map("model_url") // Optional 3D model for pedestal
+    dimensions  Json     // {width, height, depth}
+    material    Json     // {color, texture, metalness, roughness}
+    isDefault   Boolean  @default(false) @map("is_default")
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+    
+    @@map("pedestal_styles")
+}
