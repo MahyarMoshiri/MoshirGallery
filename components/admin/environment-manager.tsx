@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
+import MaterialEditor from '@/components/admin/material-editor';
 
 interface LightingConfig {
   id: string;
@@ -39,6 +40,9 @@ export default function EnvironmentManager() {
   const [editingEnv, setEditingEnv] = useState<GalleryEnvironment | null>(null);
   const [lightConfigs, setLightConfigs] = useState<LightingConfig[]>([]);
   const [formData, setFormData] = useState({ name: '', width: 20, height: 4, depth: 15 });
+  const [wallMaterial, setWallMaterial] = useState(defaultMaterial);
+  const [floorMaterial, setFloorMaterial] = useState(defaultMaterial);
+  const [ceilingMaterial, setCeilingMaterial] = useState(defaultMaterial);
   const { toast } = useToast();
 
   const defaultMaterial = {
@@ -76,6 +80,9 @@ export default function EnvironmentManager() {
     setEditingEnv(null);
     setFormData({ name: '', width: 20, height: 4, depth: 15 });
     setLightConfigs([]);
+    setWallMaterial(defaultMaterial);
+    setFloorMaterial(defaultMaterial);
+    setCeilingMaterial(defaultMaterial);
     setIsDialogOpen(true);
   };
 
@@ -83,6 +90,9 @@ export default function EnvironmentManager() {
     setEditingEnv(env);
     setFormData({ name: env.name, width: env.dimensions.width, height: env.dimensions.height, depth: env.dimensions.depth });
     setLightConfigs(env.lightingConfigs || []);
+    setWallMaterial(env.wallConfig?.material || { ...defaultMaterial, color: env.wallConfig?.color || '#ffffff' });
+    setFloorMaterial(env.floorConfig?.material || { ...defaultMaterial, color: env.floorConfig?.color || '#ffffff' });
+    setCeilingMaterial(env.ceilingConfig?.material || { ...defaultMaterial, color: env.ceilingConfig?.color || '#ffffff' });
     setIsDialogOpen(true);
   };
 
@@ -91,9 +101,9 @@ export default function EnvironmentManager() {
 
     const payload = {
       name: formData.name,
-      wallConfig: editingEnv?.wallConfig || defaultSurface,
-      floorConfig: editingEnv?.floorConfig || defaultSurface,
-      ceilingConfig: editingEnv?.ceilingConfig || defaultSurface,
+      wallConfig: { color: wallMaterial.color || '#ffffff', material: wallMaterial },
+      floorConfig: { color: floorMaterial.color || '#ffffff', material: floorMaterial },
+      ceilingConfig: { color: ceilingMaterial.color || '#ffffff', material: ceilingMaterial },
       dimensions: { width: formData.width, height: formData.height, depth: formData.depth }
     };
 
@@ -243,6 +253,15 @@ export default function EnvironmentManager() {
                 <Label htmlFor="depth">Depth</Label>
                 <Input type="number" id="depth" value={formData.depth} onChange={(e) => setFormData({ ...formData, depth: Number(e.target.value) })} required />
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-semibold">Wall Material</h3>
+              <MaterialEditor material={wallMaterial} onChange={setWallMaterial} />
+              <h3 className="font-semibold">Floor Material</h3>
+              <MaterialEditor material={floorMaterial} onChange={setFloorMaterial} />
+              <h3 className="font-semibold">Ceiling Material</h3>
+              <MaterialEditor material={ceilingMaterial} onChange={setCeilingMaterial} />
             </div>
 
             <div className="space-y-4">

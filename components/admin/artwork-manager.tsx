@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import MaterialEditor from '@/components/admin/material-editor';
+import { DEFAULT_MATERIAL } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -59,12 +61,14 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
     price: 0,
     imageUrl: '',
     type: 'painting',
+    materialProperties: DEFAULT_MATERIAL,
     position: { x: 0, y: 2, z: 0 },
     rotation: { x: 0, y: 0, z: 0 },
     scale: { x: 1, y: 1, z: 1 }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
 
   useEffect(() => {
     loadArtworks();
@@ -138,6 +142,7 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
       price: artwork.price,
       imageUrl: artwork.imageUrl || '',
       type: artwork.type,
+      materialProperties: artwork.materialProperties || DEFAULT_MATERIAL,
       position: artwork.position || { x: 0, y: 2, z: 0 },
       rotation: artwork.rotation || { x: 0, y: 0, z: 0 },
       scale: artwork.scale || { x: 1, y: 1, z: 1 }
@@ -184,6 +189,7 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
       price: 0,
       imageUrl: '',
       type: 'painting',
+      materialProperties: DEFAULT_MATERIAL,
       position: { x: 0, y: 2, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 }
@@ -314,6 +320,17 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={4}
                   required
+                />
+              </div>
+
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Material Properties
+                </h4>
+                <MaterialEditor
+                  material={formData.materialProperties}
+                  onChange={(mat) => setFormData({ ...formData, materialProperties: mat })}
                 />
               </div>
 
