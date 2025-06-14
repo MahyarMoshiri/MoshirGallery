@@ -40,15 +40,21 @@ export default function HomePage() {
         // Simulate loading progress
         setLoadingProgress(20);
         
-        // Seed database first
-        await fetch('/api/seed', { method: 'POST' });
+        // Check if artworks exist
+        let artworksResponse = await fetch('/api/artworks');
+        let artworksData: Artwork[] = [];
+        if (artworksResponse.ok) {
+          artworksData = await artworksResponse.json();
+        }
+
+        // Seed database if empty (development only)
+        if (artworksData.length === 0 && process.env.NODE_ENV === 'development') {
+          await fetch('/api/seed', { method: 'POST' });
+          artworksResponse = await fetch('/api/artworks');
+          artworksData = await artworksResponse.json();
+        }
         setLoadingProgress(40);
-        
-        // Fetch artworks
-        const artworksResponse = await fetch('/api/artworks');
-        const artworksData = await artworksResponse.json();
-        setLoadingProgress(60);
-        
+
         // Fetch active environment
         const environmentsResponse = await fetch('/api/environments');
         if (environmentsResponse.ok) {
@@ -56,9 +62,11 @@ export default function HomePage() {
           const active = environments.find((env: GalleryEnvironment) => env.isActive);
           setActiveEnvironment(active || null);
         }
-        setLoadingProgress(80);
-        
+        setLoadingProgress(60);
+
         setArtworks(artworksData);
+        setLoadingProgress(80);
+
         setLoadingProgress(100);
         
         // Small delay for smooth transition
