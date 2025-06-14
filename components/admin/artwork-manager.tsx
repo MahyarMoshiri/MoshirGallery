@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { FrameStyle, PedestalStyle } from '@/lib/types';
 import { 
   Plus, 
   Edit, 
@@ -36,6 +37,8 @@ interface Artwork {
   position: { x: number; y: number; z: number } | null;
   rotation: { x: number; y: number; z: number } | null;
   scale: { x: number; y: number; z: number } | null;
+  frameStyle?: string | null;
+  pedestalStyle?: string | null;
   createdAt: string;
   _count?: { offers: number };
 }
@@ -48,6 +51,8 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingArtwork, setEditingArtwork] = useState<Artwork | null>(null);
+  const [frameStyles, setFrameStyles] = useState<FrameStyle[]>([]);
+  const [pedestalStyles, setPedestalStyles] = useState<PedestalStyle[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -61,13 +66,17 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
     type: 'painting',
     position: { x: 0, y: 2, z: 0 },
     rotation: { x: 0, y: 0, z: 0 },
-    scale: { x: 1, y: 1, z: 1 }
+    scale: { x: 1, y: 1, z: 1 },
+    frameStyle: '',
+    pedestalStyle: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadArtworks();
+    loadFrameStyles();
+    loadPedestalStyles();
   }, []);
 
   const loadArtworks = async () => {
@@ -87,6 +96,30 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
     }
   };
 
+  const loadFrameStyles = async () => {
+    try {
+      const res = await fetch('/api/frames');
+      if (res.ok) {
+        const data = await res.json();
+        setFrameStyles(data);
+      }
+    } catch (error) {
+      console.error('Failed to load frame styles:', error);
+    }
+  };
+
+  const loadPedestalStyles = async () => {
+    try {
+      const res = await fetch('/api/pedestals');
+      if (res.ok) {
+        const data = await res.json();
+        setPedestalStyles(data);
+      }
+    } catch (error) {
+      console.error('Failed to load pedestal styles:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -95,12 +128,18 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
       const url = editingArtwork ? `/api/artworks/${editingArtwork.id}` : '/api/artworks';
       const method = editingArtwork ? 'PUT' : 'POST';
 
+      const payload = {
+        ...formData,
+        frameStyle: formData.frameStyle || null,
+        pedestalStyle: formData.pedestalStyle || null
+      };
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -140,7 +179,9 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
       type: artwork.type,
       position: artwork.position || { x: 0, y: 2, z: 0 },
       rotation: artwork.rotation || { x: 0, y: 0, z: 0 },
-      scale: artwork.scale || { x: 1, y: 1, z: 1 }
+      scale: artwork.scale || { x: 1, y: 1, z: 1 },
+      frameStyle: artwork.frameStyle || '',
+      pedestalStyle: artwork.pedestalStyle || ''
     });
     setIsDialogOpen(true);
   };
@@ -186,7 +227,9 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
       type: 'painting',
       position: { x: 0, y: 2, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1, z: 1 }
+      scale: { x: 1, y: 1, z: 1 },
+      frameStyle: '',
+      pedestalStyle: ''
     });
   };
 
@@ -295,6 +338,44 @@ export default function ArtworkManager({ onStatsUpdate }: ArtworkManagerProps) {
                   </select>
                 </div>
               </div>
+
+              {formData.type === 'painting' && (
+                <div>
+                  <Label htmlFor="frameStyle">Frame Style</Label>
+                  <select
+                    id="frameStyle"
+                    value={formData.frameStyle}
+                    onChange={(e) => setFormData({ ...formData, frameStyle: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  >
+                    <option value="">None</option>
+                    {frameStyles.map((style) => (
+                      <option key={style.id} value={style.id}>
+                        {style.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {formData.type === 'sculpture' && (
+                <div>
+                  <Label htmlFor="pedestalStyle">Pedestal Style</Label>
+                  <select
+                    id="pedestalStyle"
+                    value={formData.pedestalStyle}
+                    onChange={(e) => setFormData({ ...formData, pedestalStyle: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  >
+                    <option value="">None</option>
+                    {pedestalStyles.map((style) => (
+                      <option key={style.id} value={style.id}>
+                        {style.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="imageUrl">Image URL</Label>
