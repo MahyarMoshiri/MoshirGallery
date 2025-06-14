@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, CheckCircle, Eye } from 'lucide-react';
 
 interface LightingConfig {
   id: string;
@@ -38,8 +39,14 @@ export default function EnvironmentManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEnv, setEditingEnv] = useState<GalleryEnvironment | null>(null);
   const [lightConfigs, setLightConfigs] = useState<LightingConfig[]>([]);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [previewEnvironment, setPreviewEnvironment] = useState<GalleryEnvironment | null>(null);
   const [formData, setFormData] = useState({ name: '', width: 20, height: 4, depth: 15 });
   const { toast } = useToast();
+
+  const GalleryScene = dynamic(() => import('@/components/gallery/gallery-scene'), {
+    ssr: false
+  });
 
   const defaultMaterial = {
     color: '#ffffff',
@@ -84,6 +91,11 @@ export default function EnvironmentManager() {
     setFormData({ name: env.name, width: env.dimensions.width, height: env.dimensions.height, depth: env.dimensions.depth });
     setLightConfigs(env.lightingConfigs || []);
     setIsDialogOpen(true);
+  };
+
+  const openPreview = (env: GalleryEnvironment) => {
+    setPreviewEnvironment(env);
+    setPreviewMode(true);
   };
 
   const handleEnvSubmit = async (e: React.FormEvent) => {
@@ -208,6 +220,9 @@ export default function EnvironmentManager() {
                 <Button size="sm" onClick={() => activateEnv(env)}>
                   <CheckCircle className="h-4 w-4 mr-1" />Activate
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => openPreview(env)}>
+                  <Eye className="h-4 w-4" />
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => openEdit(env)}>
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -286,6 +301,38 @@ export default function EnvironmentManager() {
               <Button type="submit">Save</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={previewMode}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewMode(false);
+            setPreviewEnvironment(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-5xl w-full">
+          <DialogHeader>
+            <DialogTitle>
+              Preview: {previewEnvironment?.name || 'Environment'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="h-[70vh] w-full">
+            {previewEnvironment && (
+              <GalleryScene
+                artworks={[]}
+                onArtworkClick={() => {}}
+                environment={previewEnvironment as any}
+              />
+            )}
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" onClick={() => setPreviewMode(false)}>
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
