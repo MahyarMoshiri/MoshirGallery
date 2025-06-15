@@ -6,7 +6,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "setup": "npm install && npx prisma generate"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
