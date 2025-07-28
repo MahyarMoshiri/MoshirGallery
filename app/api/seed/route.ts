@@ -13,6 +13,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function POST() {
+  if (process.env.NODE_ENV === 'production') {
+    return new Response('Forbidden', { status: 403 });
+  }
   try {
     // Create default admin
     await createDefaultAdmin();
